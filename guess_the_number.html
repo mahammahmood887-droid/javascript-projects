@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Guess the Number</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #eafaf1;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: white;
+    border-radius: 18px;
+    padding: 36px 40px;
+    width: 340px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(39,174,96,0.15);
+  }
+  h1 { color: #27ae60; margin-bottom: 2px; font-size: 22px; }
+  p.sub { color: #7fa893; margin-top: 0; font-size: 13px; }
+
+  .range { font-size: 13px; color: #5a8a72; margin: 14px 0 4px; }
+
+  input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 2px solid #c8ecd9;
+    font-size: 16px;
+    text-align: center;
+    outline: none;
+  }
+  input:focus { border-color: #27ae60; }
+
+  button {
+    margin-top: 14px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #27ae60;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  button:hover { background: #1e8e4e; }
+  button:disabled { background: #b6e2c8; cursor: default; }
+
+  .feedback {
+    margin-top: 16px;
+    font-size: 15px;
+    min-height: 22px;
+    font-weight: 600;
+  }
+  .feedback.high { color: #e67e22; }
+  .feedback.low { color: #2980b9; }
+  .feedback.win { color: #27ae60; }
+
+  .stats {
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #7fa893;
+  }
+  .history {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #9bb9ab;
+    word-break: break-word;
+    min-height: 16px;
+  }
+
+  .restart {
+    display: none;
+    margin-top: 12px;
+    background: white;
+    border: 2px solid #27ae60;
+    color: #27ae60;
+  }
+  .restart:hover { background: #eafaf1; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Guess the Number</h1>
+  <p class="sub">I'm thinking of a number between 1 and 100</p>
+
+  <div class="range">Try to guess it in as few attempts as possible</div>
+  <input type="number" id="guessInput" min="1" max="100" placeholder="Enter a guess">
+  <button id="guessBtn">Guess</button>
+  <button id="restartBtn" class="restart">Play Again</button>
+
+  <div class="feedback" id="feedback"></div>
+  <div class="stats">
+    <span>Attempts: <b id="attemptCount">0</b></span>
+    <span>Best: <b id="bestScore">—</b></span>
+  </div>
+  <div class="history" id="history"></div>
+</div>
+
+<script>
+const MIN = 1;
+const MAX = 100;
+
+const guessInput = document.getElementById("guessInput");
+const guessBtn = document.getElementById("guessBtn");
+const restartBtn = document.getElementById("restartBtn");
+const feedbackEl = document.getElementById("feedback");
+const attemptCountEl = document.getElementById("attemptCount");
+const bestScoreEl = document.getElementById("bestScore");
+const historyEl = document.getElementById("history");
+
+let secretNumber = Math.floor(Math.random() * 100) + 1;
+let attempts = 0;
+let guesses = [];
+let gameOver = false;
+
+let bestScore = localStorage.getItem("guess-number-best");
+
+if (bestScore == null) {
+    bestScoreEl.textContent = "—";
+} else {
+    bestScoreEl.textContent = bestScore + " attempts";
+}
+
+guessBtn.addEventListener("click", checkGuess);
+
+restartBtn.addEventListener("click", restartGame);
+
+guessInput.addEventListener("keydown", function (e) {
+    if (e.key == "Enter") {
+        checkGuess();
+    }
+});
+
+function checkGuess() {
+
+    if (gameOver) {
+        return;
+    }
+
+    let guess = Number(guessInput.value);
+
+    if (guess < MIN || guess > MAX || isNaN(guess)) {
+        feedbackEl.textContent = "Enter a number between 1 and 100";
+        feedbackEl.className = "feedback high";
+        return;
+    }
+
+    attempts++;
+    attemptCountEl.textContent = attempts;
+
+    guesses.push(guess);
+    historyEl.textContent = "Guesses: " + guesses.join(", ");
+
+    if (guess == secretNumber) {
+
+        feedbackEl.textContent = "Correct! The number was " + secretNumber;
+        feedbackEl.className = "feedback win";
+
+        gameOver = true;
+        guessBtn.disabled = true;
+        restartBtn.style.display = "block";
+
+        if (bestScore == null || attempts < bestScore) {
+            bestScore = attempts;
+            localStorage.setItem("guess-number-best", bestScore);
+            bestScoreEl.textContent = bestScore + " attempts";
+        }
+
+    } else if (guess < secretNumber) {
+
+        feedbackEl.textContent = "Too low - try higher";
+        feedbackEl.className = "feedback low";
+
+    } else {
+
+        feedbackEl.textContent = "Too high - try lower";
+        feedbackEl.className = "feedback high";
+    }
+
+    guessInput.value = "";
+    guessInput.focus();
+}
+
+function restartGame() {
+
+    secretNumber = Math.floor(Math.random() * 100) + 1;
+    attempts = 0;
+    guesses = [];
+    gameOver = false;
+
+    attemptCountEl.textContent = 0;
+    historyEl.textContent = "";
+    feedbackEl.textContent = "";
+    feedbackEl.className = "feedback";
+
+    guessBtn.disabled = false;
+    restartBtn.style.display = "none";
+
+    guessInput.value = "";
+    guessInput.focus();
+}
+</script>
+</body>
+</html>
